@@ -64,8 +64,7 @@ salaries_series = salaries_matches[salaries_matches \
 
 salaries_clean = salaries_series \
     .str.replace(".", "") \
-    .str.replace(",", "") \
-
+    .str.replace(",", "")
 salaries = pd.to_numeric(salaries_clean, errors='coerce')
 
 # multiply monthly salaries by 14 and append to dataframe
@@ -108,11 +107,30 @@ size_dict = {
 jobs['size_clean'] = jobs['Size'].map(size_dict).fillna(-1)
 
 # Extract skills from job description
-skills = ['python', 'rstudio', ' r ', 'sql', 'spark', 'excel', 'tableau', 'hadoop', 'spss', 'statistics']
+skills = ['python', 'rstudio', ' r ', 'sql', 'spark', 'excel', 'tableau', 'hadoop', 'spss', 'statistics', 'statistik',
+          'quantitative']
 for s in skills:
     jobs[s] = jobs['Job Description'].apply(lambda x: 1 if s in x.lower() else 0)
 
 # combine r columns (rstudio + r)
 jobs['r_clean'] = [1 if a + b > 0 else 0 for a, b in zip(jobs['rstudio'], jobs[' r '])]
+jobs = jobs.drop(['rstudio', ' r '], axis=1)
 
-jobs['python'] = jobs['Job Description'].apply(lambda x: 1 if 'python' in x.lower() else 0)
+# combine statistics columns (english + german)
+jobs['statistics_clean'] = [1 if a + b + c > 0 else 0 for a, b, c in
+                            zip(jobs['statistics'], jobs['statistik'], jobs['quantitative'])]
+jobs = jobs.drop(['statistics', 'statistik', 'quantitative'], axis=1)
+
+# create column for age of company
+jobs['company_age'] = jobs['Founded'].apply(lambda x: 2020 - x if x > 0 else -1)
+
+# create cleaned output dataframe
+jobs_clean = jobs.copy()
+rename_cols_dict = {'Job Title': 'job_title_orig', 'Revenue': 'revenue_orig', 'Size': 'size_orig'}
+jobs_clean = jobs_clean.rename(columns=rename_cols_dict)
+jobs_clean.columns = [c.lower().replace(" ", "_").replace("_clean", "") for c in jobs_clean.columns]
+
+jobs_clean.to_csv('jobs_clean.csv', index=False)
+
+jobs_clean[jobs_clean.duplicated(suset=['job_description'])]
+e
